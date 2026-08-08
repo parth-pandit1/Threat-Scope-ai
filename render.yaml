@@ -4,7 +4,7 @@ services:
   # ─────────────────────────────────────────────
   - type: web
     name: threatscope-api
-    env: python
+    runtime: python
     rootDir: threatscope-backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -18,7 +18,7 @@ services:
   # ─────────────────────────────────────────────
   - type: worker
     name: threatscope-worker-default
-    env: python
+    runtime: python
     rootDir: threatscope-backend
     buildCommand: pip install -r requirements.txt
     startCommand: python -m app.worker default
@@ -30,7 +30,7 @@ services:
   # ─────────────────────────────────────────────
   - type: worker
     name: threatscope-worker-screenshots
-    env: python
+    runtime: python
     rootDir: threatscope-backend
     buildCommand: pip install -r requirements.txt
     startCommand: python -m app.worker screenshots
@@ -42,7 +42,7 @@ services:
   # ─────────────────────────────────────────────
   - type: cron
     name: threatscope-yara-sync
-    env: python
+    runtime: python
     rootDir: threatscope-backend
     schedule: "0 0 * * *" # Every day at midnight
     buildCommand: pip install -r requirements.txt
@@ -50,7 +50,7 @@ services:
     envVars:
       - fromGroup: threatscope-env-group
 
-envGroups:
+envVarGroups:
   - name: threatscope-env-group
     envVars:
       - key: BUILD_LIB
