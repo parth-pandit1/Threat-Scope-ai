@@ -1,0 +1,107 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmagic1 libfuzzy-dev
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r threatscope-backend/requirements.txt
+
+      - name: Run Backend Pytest
+        working-directory: ./threatscope-backend
+        run: |
+          python -m pytest
+
+  frontend-build:
+    name: Frontend Build & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ./threatscope-frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./threatscope-frontend
+        run: |
+          npm ci
+
+      - name: Run Next.js Build
+        working-directory: ./threatscope-frontend
+        run: |
+          npm run build
+
+  docker-smoke-test:
+    name: Docker Build & Integration Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Prepare Configuration
+        run: |
+          cp threatscope-backend/.env.example threatscope-backend/.env
+
+      - name: Start Docker Compose Services
+        run: |
+          docker compose -f threatscope-backend/docker-compose.yml up -d db redis minio api
+
+      - name: Wait for API to be Healthy
+        run: |
+          echo "Waiting for backend API service to be healthy..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/api/health | grep -q '"status":"healthy"'; then
+              echo "API is healthy!"
+              exit 0
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 5
+          done
+          echo "Error: Backend API did not become healthy in time"
+          docker compose -f threatscope-backend/docker-compose.yml logs
+          exit 1
+
+      - name: Execute Smoke Test (File Upload)
+        run: |
+          echo "Uploading a dummy file to the POST /api/scan/file endpoint..."
+          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -F "file=@threatscope-backend/README.md" http://localhost:8000/api/scan/file)
+          echo "Received HTTP response code: $RESPONSE_CODE"
+          if [ "$RESPONSE_CODE" -eq 202 ]; then
+            echo "Smoke test passed successfully!"
+          else
+            echo "Error: Smoke test failed! Expected HTTP 202, got HTTP $RESPONSE_CODE"
+            exit 1
+          fi
+
+      - name: Teardown Services
+        if: always()
+        run: |
+          docker compose -f threatscope-backend/docker-compose.yml down

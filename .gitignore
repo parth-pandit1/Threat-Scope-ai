@@ -1,0 +1,25 @@
+# Dependencies
+**/node_modules/
+**/venv/
+**/.venv/
+
+# Environment files
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Cache and build outputs
+**/.next/
+**/build/
+**/dist/
+**/.pytest_cache/
+**/__pycache__/
+**/*.py[cod]
+
+# YARA databases
+**/yara_rules/repos/
+**/yara_rules/compiled.yarc
+**/*.yarc
+yara_rules/repos/
+yara_rules/compiled.yarc
+*.yarc

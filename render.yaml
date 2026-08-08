@@ -1,0 +1,89 @@
+services:
+  # ─────────────────────────────────────────────
+  # FastAPI Web Service
+  # ─────────────────────────────────────────────
+  - type: web
+    name: threatscope-api
+    env: python
+    rootDir: threatscope-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - fromGroup: threatscope-env-group
+      - key: PORT
+        value: 10000
+
+  # ─────────────────────────────────────────────
+  # RQ Background Worker (Default Queue)
+  # ─────────────────────────────────────────────
+  - type: worker
+    name: threatscope-worker-default
+    env: python
+    rootDir: threatscope-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.worker default
+    envVars:
+      - fromGroup: threatscope-env-group
+
+  # ─────────────────────────────────────────────
+  # RQ Background Worker (Screenshots Queue)
+  # ─────────────────────────────────────────────
+  - type: worker
+    name: threatscope-worker-screenshots
+    env: python
+    rootDir: threatscope-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.worker screenshots
+    envVars:
+      - fromGroup: threatscope-env-group
+
+  # ─────────────────────────────────────────────
+  # Daily YARA Rules Sync Cron
+  # ─────────────────────────────────────────────
+  - type: cron
+    name: threatscope-yara-sync
+    env: python
+    rootDir: threatscope-backend
+    schedule: "0 0 * * *" # Every day at midnight
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -c "from app.tasks.yara_update import update_yara_rules_task; update_yara_rules_task()"
+    envVars:
+      - fromGroup: threatscope-env-group
+
+envGroups:
+  - name: threatscope-env-group
+    envVars:
+      - key: BUILD_LIB
+        value: "1"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: MINIO_ENDPOINT
+        sync: false
+      - key: MINIO_ACCESS_KEY
+        sync: false
+      - key: MINIO_SECRET_KEY
+        sync: false
+      - key: MINIO_BUCKET
+        value: threatscope-files
+      - key: MINIO_SECURE
+        value: "true"
+      - key: MINIO_PUBLIC_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: '["https://threatscope-frontend.vercel.app", "http://localhost:3000"]'
+      - key: YARA_BASE_DIR
+        value: /opt/render/project/src/threatscope-backend/yara_rules/repos
+      - key: COMPILED_RULES_PATH
+        value: /opt/render/project/src/threatscope-backend/yara_rules/compiled.yarc
+      - key: VIRUSTOTAL_API_KEY
+        sync: false
+      - key: ABUSEIPDB_API_KEY
+        sync: false
+      - key: SHODAN_API_KEY
+        sync: false
+      - key: URLSCAN_API_KEY
+        sync: false
