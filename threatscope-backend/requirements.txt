@@ -19,7 +19,7 @@ minio==7.2.7
 python-whois==0.9.4
 dnspython==2.6.1
 httpx[http2]==0.27.0
-python-magic-bin==0.4.14
+python-magic==0.4.27
 puremagic==2.1.0
 python-dotenv==1.0.1
 pyjwt==2.8.0
