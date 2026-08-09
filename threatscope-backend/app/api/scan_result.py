@@ -7,7 +7,6 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.config import settings
 from app.core.limiter import limiter, get_rate_limit
 from app.core.auth_deps import get_current_user, check_daily_quota
 from app.models.user import User

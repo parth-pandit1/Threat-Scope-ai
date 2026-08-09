@@ -16,26 +16,16 @@ services:
   # ─────────────────────────────────────────────
   # RQ Background Worker (Default Queue)
   # ─────────────────────────────────────────────
-  - type: worker
+  - type: cron
     name: threatscope-worker-default
     runtime: python
     rootDir: threatscope-backend
+    schedule: "*/5 * * * *"
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m app.worker default
+    startCommand: python -m app.worker default --burst
     envVars:
       - fromGroup: threatscope-env-group
 
-  # ─────────────────────────────────────────────
-  # RQ Background Worker (Screenshots Queue)
-  # ─────────────────────────────────────────────
-  - type: worker
-    name: threatscope-worker-screenshots
-    runtime: python
-    rootDir: threatscope-backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m app.worker screenshots
-    envVars:
-      - fromGroup: threatscope-env-group
 
   # ─────────────────────────────────────────────
   # Daily YARA Rules Sync Cron

@@ -60,33 +60,6 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # ─────────────────────────────────────────────
-  # RQ Async Worker (screenshots)
-  # ─────────────────────────────────────────────
-  screenshot-worker:
-    build: .
-    container_name: threatscope-screenshot-worker
-    command: python -m app.worker screenshots
-    volumes:
-      - .:/app
-      - yara_rules_data:/app/yara_rules
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    networks:
-      - threatscope-net
-    healthcheck:
-      test: ["CMD", "python", "-c", "from rq import Worker; from redis import Redis; print(len(Worker.all(connection=Redis(host='redis'))))"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-    restart: unless-stopped
 
   # ─────────────────────────────────────────────
   # PostgreSQL 16 Database

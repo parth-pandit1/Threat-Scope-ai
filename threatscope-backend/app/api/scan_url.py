@@ -12,7 +12,6 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.models.scan import Scan, ScanStatus, ScanType
 from app.schemas.scan import ScanSubmitResponse, UrlScanRequest

@@ -30,7 +30,7 @@ if settings.SENTRY_DSN:
 from app.models.user import User
 import jwt
 import uuid
-from app.core.database import init_db, async_session_factory, get_db
+from app.core.database import async_session_factory, get_db
 from app.core.storage import ensure_bucket_exists, get_minio_client
 from app.core.rq_setup import redis_conn
 from app.models.scan import Scan, Verdict
