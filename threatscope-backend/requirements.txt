@@ -20,7 +20,7 @@ python-whois==0.9.4
 dnspython==2.6.1
 httpx[http2]==0.27.0
 python-magic==0.4.27
-puremagic==2.1.0
+puremagic==1.30
 python-dotenv==1.0.1
 pyjwt==2.8.0
 passlib[bcrypt]==1.7.4
