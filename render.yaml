@@ -59,6 +59,8 @@ envVarGroups:
         value: threatscope-files
       - key: MINIO_SECURE
         value: "true"
+      - key: MINIO_REGION
+        value: "us-east-005"
       - key: MINIO_PUBLIC_URL
         sync: false
       - key: JWT_SECRET_KEY

@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_BUCKET: str = "threatscope-files"
     MINIO_SECURE: bool = False
+    MINIO_REGION: str = "us-east-005"
     MINIO_PUBLIC_URL: str = "http://localhost:9000"
 
     # ── External APIs ────────────────────────
