@@ -56,6 +56,7 @@ async def lifespan(app: FastAPI):
     logger.info("Database migration check completed (run via entrypoint)")
 
     logger.info(f"Resolved MINIO_ENDPOINT: {settings.MINIO_ENDPOINT}")
+    logger.info(f"Resolved MINIO_REGION: {settings.MINIO_REGION}")
 
     # MinIO bucket
     try:

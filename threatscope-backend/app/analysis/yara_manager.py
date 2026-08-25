@@ -64,14 +64,17 @@ def update_rules():
                 logger.error(f"Failed to clone {name}: {e}")
 
         # Gather .yar and .yara files
+        rule_index = 0
         for root, _, files in os.walk(repo_dir):
             for file in files:
                 if file.endswith(".yar") or file.endswith(".yara"):
                     path = os.path.join(root, file)
-                    namespace = name
-                    if namespace not in filepaths:
-                        filepaths[namespace] = {}
-                    filepaths[namespace][path] = path
+                    # yara.compile(filepaths=...) expects a flat dict of
+                    # {namespace: filepath} where both are plain strings.
+                    # Use a unique namespace key per file to avoid collisions.
+                    namespace = f"{name}_{rule_index}"
+                    filepaths[namespace] = str(path)
+                    rule_index += 1
 
     # Compile rules
     try:
