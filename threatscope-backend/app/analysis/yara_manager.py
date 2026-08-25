@@ -44,7 +44,7 @@ def update_rules():
         return
     os.makedirs(YARA_BASE_DIR, exist_ok=True)
     
-    filepaths = {}
+    all_rule_files = []  # list of (repo_name, filepath_str) tuples
     
     for name, url in REPOS.items():
         repo_dir = os.path.join(YARA_BASE_DIR, name)
@@ -64,25 +64,52 @@ def update_rules():
                 logger.error(f"Failed to clone {name}: {e}")
 
         # Gather .yar and .yara files
-        rule_index = 0
         for root, _, files in os.walk(repo_dir):
             for file in files:
                 if file.endswith(".yar") or file.endswith(".yara"):
-                    path = os.path.join(root, file)
-                    # yara.compile(filepaths=...) expects a flat dict of
-                    # {namespace: filepath} where both are plain strings.
-                    # Use a unique namespace key per file to avoid collisions.
-                    namespace = f"{name}_{rule_index}"
-                    filepaths[namespace] = str(path)
-                    rule_index += 1
+                    path = str(os.path.join(root, file))
+                    all_rule_files.append((name, path))
 
-    # Compile rules
+    if not all_rule_files:
+        logger.warning("No YARA rule files found to compile.")
+        return
+
+    # ── Validate each rule individually; skip broken ones ──
+    # Rules with unresolvable includes (e.g. MALW_AZORULT's relative
+    # include of ./malware/TOOLKIT_exe2hex_payload.yar) or syntax errors
+    # are logged and excluded so one bad rule doesn't block the rest.
+    valid_filepaths = {}
+    failed_count = 0
+    rule_index = 0
+
+    for repo_name, path in all_rule_files:
+        try:
+            yara.compile(filepath=path)
+            namespace = f"{repo_name}_{rule_index}"
+            valid_filepaths[namespace] = path
+            rule_index += 1
+        except Exception as e:
+            failed_count += 1
+            logger.debug(
+                "Skipping YARA rule %s: %s", os.path.basename(path), e
+            )
+
+    if not valid_filepaths:
+        logger.warning(
+            "No valid YARA rule files after filtering %d broken rules.",
+            failed_count,
+        )
+        return
+
+    logger.info(
+        "Compiling %d valid YARA rules (%d skipped due to errors)",
+        len(valid_filepaths),
+        failed_count,
+    )
+
+    # ── Batch compile all validated rules into a single Rules object ──
     try:
-        if not filepaths:
-            logger.warning("No YARA rule files found to compile.")
-            return
-
-        rules = yara.compile(filepaths=filepaths)
+        rules = yara.compile(filepaths=valid_filepaths)
         os.makedirs(os.path.dirname(COMPILED_RULES_PATH), exist_ok=True)
         rules.save(COMPILED_RULES_PATH)
         _compiled_rules = rules
@@ -90,10 +117,11 @@ def update_rules():
         # Save stats to redis
         stats = {
             "last_updated": time.time(),
-            "rule_count": sum(len(rules_dict) for rules_dict in filepaths.values())
+            "rule_count": len(valid_filepaths),
+            "skipped_count": failed_count,
         }
         redis_conn.set("yara_status", json.dumps(stats))
-        logger.info("Yara rules updated and compiled successfully.")
+        logger.info("YARA rules compiled and saved successfully.")
     except yara.SyntaxError as e:
         logger.error(f"Failed to compile yara rules: {e}")
     except Exception as e:
