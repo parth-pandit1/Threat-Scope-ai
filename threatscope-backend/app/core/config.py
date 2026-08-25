@@ -113,11 +113,6 @@ class Settings(BaseSettings):
                 return "yara_rules/compiled.yarc"
         return v
 
-    # ── JWT Auth Settings ────────────────────
-    JWT_SECRET_KEY: str = "super-secret-jwt-key-change-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-
     # ── Ollama (Local LLM) ──────────────────
     OLLAMA_URL: str = "http://ollama:11434/api/generate"
     OLLAMA_MODEL: str = "mistral"

@@ -38,23 +38,6 @@ def override_dependencies(mock_db_session, monkeypatch):
 
     app.dependency_overrides[get_db] = _get_db
 
-    # Override get_current_user dependency with a default user
-    from app.core.auth_deps import get_current_user
-    from app.models.user import User, UserTier
-    import uuid
-
-    mock_user = User(
-        id=uuid.UUID("00000000-0000-0000-0000-000000000000"),
-        email="test@example.com",
-        hashed_password="somehash",
-        api_key="ts_testkey",
-        tier=UserTier.FREE,
-    )
-    async def _get_current_user():
-        return mock_user
-
-    app.dependency_overrides[get_current_user] = _get_current_user
-
     # Mock MinIO storage methods
     mock_upload = MagicMock(return_value="test_object_name")
     mock_download = MagicMock(return_value=b"test_file_bytes")

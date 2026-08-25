@@ -28,8 +28,6 @@ from app.schemas.scan import ScanSubmitResponse
 from app.tasks.scan_tasks import scan_file_task
 from app.core.rq_setup import get_queue
 from app.core.limiter import limiter, get_rate_limit
-from app.core.auth_deps import get_current_user, check_daily_quota
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +45,6 @@ async def upload_scan_file(
     request: Request,
     file: UploadFile = File(..., description="File to analyse (max 50 MB)"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    _quota: None = Depends(check_daily_quota),
 ) -> ScanSubmitResponse:
     """
     Upload a file for background malware analysis.
@@ -107,7 +103,7 @@ async def upload_scan_file(
         if file.filename and "." in file.filename
         else "bin"
     )
-    object_name = f"users/{current_user.id}/{scan_id}.{extension}"
+    object_name = f"uploads/{scan_id}.{extension}"
 
     try:
         upload_file(file_data, object_name, actual_mime)
@@ -121,7 +117,7 @@ async def upload_scan_file(
     # ── Create Scan record ───────────────────
     scan = Scan(
         id=scan_id,
-        user_id=current_user.id,
+        user_id=None,
         scan_type=ScanType.FILE,
         target=file.filename or "unknown",
         status=ScanStatus.QUEUED,

@@ -8,8 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.limiter import limiter, get_rate_limit
-from app.core.auth_deps import get_current_user, check_daily_quota
-from app.models.user import User
 from app.models.scan import Scan, ScanType, ScanStatus
 from app.schemas.scan import ScanHistoryResponse, ScanResultResponse, IpScanRequest, ScanSubmitResponse
 
@@ -90,8 +88,6 @@ async def submit_ip_scan(
     request: Request,
     payload: IpScanRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    _quota: None = Depends(check_daily_quota),
 ) -> ScanSubmitResponse:
     """
     Submit an IP address for background WHOIS, reverse DNS, and reputation analysis.
@@ -118,7 +114,7 @@ async def submit_ip_scan(
     scan_id = uuid.uuid4()
     scan = Scan(
         id=scan_id,
-        user_id=current_user.id,
+        user_id=None,
         scan_type=ScanType.IP,
         target=ip,
         status=ScanStatus.QUEUED,

@@ -17,7 +17,7 @@ from sqlalchemy import text, select, func
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.api import scan_file, scan_result, scan_url, auth, admin
+from app.api import scan_file, scan_result, scan_url
 from app.core.config import settings
 import sentry_sdk
 
@@ -27,9 +27,6 @@ if settings.SENTRY_DSN:
         traces_sample_rate=1.0,
         profiles_sample_rate=1.0,
     )
-from app.models.user import User
-import jwt
-import uuid
 from app.core.database import async_session_factory, get_db
 from app.core.storage import ensure_bucket_exists, get_minio_client
 from app.core.rq_setup import redis_conn
@@ -107,50 +104,6 @@ async def lifespan(app: FastAPI):
     logger.info("═══ Shutting down ThreatScope AI backend ═══")
 
 
-from starlette.middleware.base import BaseHTTPMiddleware
-
-class AuthMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to resolve authenticated users from JWT tokens or API Keys
-    and attach them to request.state.user before rate limiting or route execution.
-    """
-    async def dispatch(self, request: Request, call_next):
-        request.state.user = None
-        
-        # 1. API key header
-        api_key = request.headers.get("x-api-key")
-        # 2. JWT cookie or Authorization header
-        token = request.cookies.get("access_token")
-        if not token:
-            auth_header = request.headers.get("Authorization")
-            if auth_header and auth_header.startswith("Bearer "):
-                token = auth_header.split(" ")[1]
-
-        if api_key or token:
-            try:
-                async with async_session_factory() as db:
-                    if api_key:
-                        result = await db.execute(select(User).where(User.api_key == api_key))
-                        user = result.scalar_one_or_none()
-                        if user and not user.is_banned:
-                            request.state.user = user
-                    elif token:
-                        try:
-                            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
-                            user_id_str = payload.get("sub")
-                            if user_id_str:
-                                user_id = uuid.UUID(user_id_str)
-                                result = await db.execute(select(User).where(User.id == user_id))
-                                user = result.scalar_one_or_none()
-                                if user and not user.is_banned:
-                                    request.state.user = user
-                        except jwt.PyJWTError:
-                            pass
-            except Exception as e:
-                logger.error("AuthMiddleware DB lookup error: %s", str(e))
-                
-        response = await call_next(request)
-        return response
 
 
 # ── FastAPI Application ──────────────────────────────────────
@@ -164,8 +117,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Add custom user resolver middleware first
-app.add_middleware(AuthMiddleware)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -176,8 +128,6 @@ app.add_middleware(
 )
 
 # ── Router Registration ─────────────────────────────────────
-app.include_router(auth.router)
-app.include_router(admin.router)
 app.include_router(scan_file.router)
 app.include_router(scan_url.router)
 app.include_router(scan_result.router)

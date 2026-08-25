@@ -18,8 +18,6 @@ from app.schemas.scan import ScanSubmitResponse, UrlScanRequest
 from app.tasks.scan_tasks import scan_url_task
 from app.core.rq_setup import get_queue
 from app.core.limiter import limiter, get_rate_limit
-from app.core.auth_deps import get_current_user, check_daily_quota
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +35,6 @@ async def submit_url_scan(
     request: Request,
     payload: UrlScanRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    _quota: None = Depends(check_daily_quota),
 ) -> ScanSubmitResponse:
     """
     Submit a URL for background WHOIS and DNS analysis.
@@ -57,7 +53,7 @@ async def submit_url_scan(
     scan_id = uuid.uuid4()
     scan = Scan(
         id=scan_id,
-        user_id=current_user.id,
+        user_id=None,
         scan_type=ScanType.URL,
         target=url,
         status=ScanStatus.QUEUED,

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
   title: "ThreatScope AI — Threat Intelligence Platform",
@@ -18,11 +17,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-gray-50/50">
-        <AuthProvider>
-          <Navbar />
-          <main className="flex-1 pt-14">{children}</main>
-          <Footer />
-        </AuthProvider>
+        <Navbar />
+        <main className="flex-1 pt-14">{children}</main>
+        <Footer />
       </body>
     </html>
   );

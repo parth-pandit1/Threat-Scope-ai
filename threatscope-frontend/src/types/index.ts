@@ -279,24 +279,3 @@ export interface MITRETechnique {
   name: string;
   tactic: string;
 }
-
-/* ── Authentication & Users ───────────────── */
-
-export type UserTier = "free" | "pro";
-
-export interface UserResponse {
-  id: string;
-  email: string;
-  api_key: string;
-  tier: UserTier;
-  is_admin: boolean;
-  is_banned: boolean;
-  created_at: string;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  user: UserResponse;
-}
