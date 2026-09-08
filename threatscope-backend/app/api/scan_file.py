@@ -8,12 +8,13 @@ record, and dispatches an RQ background task for analysis.
 
 import logging
 import uuid
-import magic
 try:
-    magic.from_buffer(b"", mime=True)
-    _has_magic = True
-except Exception:
-    _has_magic = False
+    import magic
+    magic.from_buffer(b"", mime=True)   # verify libmagic is actually usable
+    MAGIC_AVAILABLE = True
+except (ImportError, Exception):
+    magic = None                        # type: ignore[assignment]
+    MAGIC_AVAILABLE = False
 
 import puremagic
 
@@ -70,7 +71,7 @@ async def upload_scan_file(
         )
 
     # ── Validate MIME type with magic ────────
-    if _has_magic:
+    if MAGIC_AVAILABLE:
         try:
             actual_mime = magic.from_buffer(file_data, mime=True)
         except Exception:

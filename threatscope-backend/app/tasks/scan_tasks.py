@@ -45,7 +45,10 @@ from sqlalchemy import select
 from app.core.database import async_session_factory
 from app.core.storage import download_file
 from app.models.scan import Scan, ScanStatus, Verdict
-import ssdeep
+try:
+    import ssdeep
+except ImportError:
+    ssdeep = None
 
 logger = logging.getLogger(__name__)
 
